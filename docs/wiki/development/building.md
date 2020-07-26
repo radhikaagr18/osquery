@@ -2,7 +2,7 @@ osquery supports many flavors of Linux, macOS, and Windows.
 
 While osquery runs on a large number of operating systems, we only provide build instructions for a select few.
 
-The supported compilers are: the osquery toolchain (LLVM/Clang 9.0.1) on Linux, MSVC v141 on Windows, and AppleClang from Xcode Command Line Tools 10.2.1.
+The supported compilers are: the osquery toolchain (LLVM/Clang 9.0.1) on Linux, MSVC v142 on Windows, and AppleClang from Xcode Command Line Tools 10.2.1.
 
 # Prerequisites
 
@@ -27,6 +27,9 @@ sudo apt install --no-install-recommends git python3 bison flex make
 # Optional: install python tests prerequisites
 sudo apt install --no-install-recommends python3-pip python3-setuptools python3-psutil python3-six python3-wheel
 pip3 install timeout_decorator thrift==0.11.0 osquery pexpect==3.3
+
+# Optional: install RPM packaging prerequisites
+sudo apt install --no-install-recommends rpm binutils
 
 # Download and install the osquery toolchain
 wget https://github.com/osquery/osquery-toolchain/releases/download/1.1.0/osquery-toolchain-1.1.0-x86_64.tar.xz
@@ -93,8 +96,8 @@ Note: It may be easier to install these prerequisites using [Chocolatey](https:/
 
 - [CMake](https://cmake.org/) (>= 3.14.6): the MSI installer is recommended. During installation, select the option to add it to the system `PATH` for all users. If there is any older version of CMake installed (e.g., using Chocolatey), uninstall that version first!  Do not install CMake using the Visual Studio Installer, because it contains an older version than required.
 - Visual Studio 2019 (2 options)
-  1. [Visual Studio 2019 Build Tools Installer](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16) (without Visual Studio): In the installer choose the "C++ build tools" workload, then on the right, under "Optional", select "MSVC v141 - VS 2017 C++", "MSVC v142 - VS 2017 C++", "Windows 10 SDK", and "C++ Clang tools for Windows".
-  2. [Visual Studio 2019 Community Installer](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community&rel=16): In the installer choose the "Desktop development with C++" workload, then on the right, under "Optional", select "MSVC v141 - VS 2017 C++", "MSVC v142 - VS 2017 C++", "Windows 10 SDK", and "C++ Clang tools for Windows".
+  1. [Visual Studio 2019 Build Tools Installer](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16) (without Visual Studio): In the installer choose the "C++ build tools" workload, then on the right, under "Optional", select "MSVC v142 - VS 2019 C++", "Windows 10 SDK", and "C++ Clang tools for Windows".
+  2. [Visual Studio 2019 Community Installer](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=Community&rel=16): In the installer choose the "Desktop development with C++" workload, then on the right, under "Optional", select "MSVC v142 - VS 2019 C++", "Windows 10 SDK", and "C++ Clang tools for Windows".
 - [Git for Windows](https://github.com/git-for-windows/git/releases/latest): Select "checkout as-is, commit as-is". Later check "Enable symbolic links" support.
 - [Python 3](https://www.python.org/downloads/windows/), specifically the 64-bit version.
 - [Wix Toolset](https://wixtoolset.org/releases/)
@@ -122,7 +125,7 @@ cd osquery
 
 # Configure
 mkdir build; cd build
-cmake -G "Visual Studio 16 2019" -A x64 -T v141 ..
+cmake -G "Visual Studio 16 2019" -A x64 ..
 
 # Build
 cmake --build . --config RelWithDebInfo -j10 # Number of projects to build in parallel
@@ -276,9 +279,14 @@ vagrant ssh aws-amazon2015.03
 
 # Custom Packages
 
-Package creation is facilitated by CPack.
+Package creation is facilitated by CPack. Creating a standalone custom package on any platform should be as simple as running:
 
-The package will include several components:
+```sh
+cmake --build . --target package
+```
+
+Invoking the `package` target will instruct `cpack` to auto resolve all of the package
+dependencies for osquery and build a platform specific package. The package created will include several components:
 
 - The executables: `osqueryd`, `osqueryi`, and small management script `osqueryctl`
 - An osquery systemd unit on Linux (with initd script wrapper)
@@ -288,15 +296,52 @@ The package will include several components:
 - The example query packs from the repository
 - Folder structures required for logging
 
+What follows are instructions for directly invoking `cpack` on each platform, should
+you wish to create a more custom deployment package. For the most part this is not
+encouraged, and users should stick with leveraging the `package` target as detailed above.
+
+### On Linux:
+
 To create a DEB, RPM, or TGZ on Linux, CPack will attempt to auto-detect the appropriate package type.
 You may override this with the CMake `PACKAGING_SYSTEM` variable as seen in the example below.
 
+Note: RPM will always try to create debuginfo packages, to do so though it needs the source folder
+to be in a path that's longer than `/usr/src/debug/osquery/src_0` and the build folder
+to be in a path that's longer than `/usr/src/debug/osquery/src_1`.
+
 ```sh
-cmake -DPACKAGING_SYSTEM=RPM ..
+cmake -DOSQUERY_TOOLCHAIN_SYSROOT=/usr/local/osquery-toolchain -DPACKAGING_SYSTEM=RPM ..
 cmake --build . --target package
 ```
 
-On macOS the `package` target will create a `.pkg`, and on Windows it will create a `.msi`.
+### On Windows:
+
+On Windows CPack will create an MSI by default. You can toggle this behavior to instead create a 
+Chocolatey package by overriding the CMake `PACKAGING_SYSTEM` variable similar to Linux.
+
+To create a default MSI package use the following:
+
+```sh
+cmake -G "Visual Studio 16 2019" -A x64 ..
+cmake --build . --config Release --target package
+```
+
+To instead generate a Chocolatey package, use the following:
+
+```sh
+cmake -DPACKAGING_SYSTEM=NuGet -G "Visual Studio 16 2019" -A x64 ..
+cmake --build . --config Release --target package
+```
+
+### On Macos:
+
+On macOS you can choose between a TGZ or a PKG, which is the default.
+You may override this with the CMake `PACKAGING_SYSTEM` variable as seen in the example below.
+
+```sh
+cmake -DPACKAGING_SYSTEM=TGZ -DCMAKE_OSX_DEPLOYMENT_TARGET=10.11 ..
+cmake --build . --target package
+```
 
 # Build Performance
 
@@ -305,6 +350,6 @@ Generating a virtual table should *not* impact system performance. This is easie
 Some quick features include:
 
 - Performance regression and leak detection CI guards.
-- Blacklisting performance-impacting virtual tables.
+- Denylisting performance-impacting virtual tables.
 - Scheduled query optimization and profiling.
 - Query implementation isolation options.

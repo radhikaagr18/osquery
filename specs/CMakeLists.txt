@@ -30,6 +30,8 @@ endfunction()
 
 function(generateNativeTables)
   set(platform_independent_spec_files
+    azure_instance_metadata.table
+    azure_instance_tags.table
     carbon_black_info.table
     carves.table
     chrome_extensions.table
@@ -173,7 +175,7 @@ function(generateNativeTables)
     "lldpd/lldp_neighbors.table:linux,macos,freebsd"
     "kernel_info.table:linux,macos,windows"
     "macwin/certificates.table:macos,windows"
-    "macwin/startup_items.table:macos,windows"
+    "macwin/startup_items.table:macos,windows,linux"
     "posix/acpi_tables.table:linux,macos"
     "posix/apt_sources.table:linux,macos,freebsd"
     "posix/augeas.table:linux,macos,freebsd"
@@ -240,12 +242,13 @@ function(generateNativeTables)
     "posix/usb_devices.table:linux,macos"
     "posix/user_events.table:linux,macos,freebsd"
     "posix/yum_sources.table:linux,macos,freebsd"
-    "sleuthkit/device_file.table:linux,macos,freebsd"
-    "sleuthkit/device_hash.table:linux,macos,freebsd"
-    "sleuthkit/device_partitions.table:linux,macos,freebsd"
+    "sleuthkit/device_file.table:linux,macos,freebsd,windows"
+    "sleuthkit/device_hash.table:linux,macos,freebsd,windows"
+    "sleuthkit/device_partitions.table:linux,macos,freebsd,windows"
     "smart/smart_drive_info.table:linux,macos"
     "user_groups.table:linux,macos,windows"
     "windows/bitlocker_info.table:windows"
+    "windows/chassis_info.table:windows"
     "windows/logon_sessions.table:windows"
     "windows/ntfs_acl_permissions.table:windows"
     "windows/scheduled_tasks.table:windows"
@@ -284,9 +287,11 @@ function(generateNativeTables)
     "windows/windows_optional_features.table:windows"
     "windows/connectivity.table:windows"
     "windows/userassist.table:windows"
+    "windows/dns_cache.table:windows"
     "windows/hvci_status.table:windows"
+    "windows/shimcache.table:windows"
     "yara/yara_events.table:linux,macos"
-    "yara/yara.table:linux,macos,freebsd"
+    "yara/yara.table:linux,macos,freebsd,windows"
   )
 
   foreach(spec_descriptor ${platform_dependent_spec_files})

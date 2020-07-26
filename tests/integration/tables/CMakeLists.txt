@@ -69,6 +69,9 @@ function(generateTestsIntegrationTablesTestsTest)
     users.cpp
     ssh_configs.cpp
     user_ssh_keys.cpp
+    device_file.cpp
+    device_hash.cpp
+    device_partitions.cpp
   )
 
   if(DEFINED PLATFORM_POSIX)
@@ -80,9 +83,6 @@ function(generateTestsIntegrationTablesTestsTest)
       block_devices.cpp
       cpu_time.cpp
       crontab.cpp
-      device_file.cpp
-      device_hash.cpp
-      device_partitions.cpp
       disk_encryption.cpp
       dns_resolvers.cpp
       docker_container_labels.cpp
@@ -130,7 +130,6 @@ function(generateTestsIntegrationTablesTestsTest)
       ulimit_info.cpp
       usb_devices.cpp
       user_events.cpp
-      yara.cpp
       yum_sources.cpp
     )
 
@@ -173,8 +172,10 @@ function(generateTestsIntegrationTablesTestsTest)
       shared_memory.cpp
       smart_drive_info.cpp
       socket_events.cpp
+      startup_items.cpp
       syslog_events.cpp
       yara_events.cpp
+      yara.cpp
     )
 
     list(APPEND source_files ${platform_source_files})
@@ -250,6 +251,7 @@ function(generateTestsIntegrationTablesTestsTest)
       xprotect_meta.cpp
       xprotect_reports.cpp
       yara_events.cpp
+      yara.cpp
     )
 
     list(APPEND source_files ${platform_source_files})
@@ -262,6 +264,7 @@ function(generateTestsIntegrationTablesTestsTest)
       bitlocker_info.cpp
       certificates.cpp
       connectivity.cpp
+      chassis_info.cpp
       chocolatey_packages.cpp
       cpu_info.cpp
       default_environment.cpp
@@ -284,6 +287,7 @@ function(generateTestsIntegrationTablesTestsTest)
       scheduled_tasks.cpp
       services.cpp
       shared_resources.cpp
+      shimcache.cpp
       startup_items.cpp
       userassist.cpp
       video_info.cpp
@@ -297,6 +301,7 @@ function(generateTestsIntegrationTablesTestsTest)
       wmi_filter_consumer_binding.cpp
       wmi_script_event_consumers.cpp
       hvci_status.cpp
+      yara.cpp
     )
 
     list(APPEND source_files ${platform_source_files})

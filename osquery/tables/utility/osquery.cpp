@@ -210,7 +210,7 @@ QueryData genOsqueryInfo(QueryContext& context) {
       (pingExtension(FLAGS_extensions_socket).ok()) ? "active" : "inactive";
   r["build_platform"] = STR(OSQUERY_BUILD_PLATFORM);
   r["build_distro"] = STR(OSQUERY_BUILD_DISTRO);
-  r["start_time"] = INTEGER(Config::getStartTime());
+  r["start_time"] = INTEGER(getStartTime());
   if (Initializer::isWorker()) {
     r["watcher"] = INTEGER(PlatformProcess::getLauncherProcess()->pid());
   } else {
@@ -237,7 +237,7 @@ QueryData genOsquerySchedule(QueryContext& context) {
         r["name"] = name;
         r["query"] = query.query;
         r["interval"] = INTEGER(query.interval);
-        r["blacklisted"] = (query.blacklisted) ? "1" : "0";
+        r["denylisted"] = (query.denylisted) ? "1" : "0";
         // Set default (0) values for each query if it has not yet executed.
         r["executions"] = "0";
         r["wall_time"] = "0";

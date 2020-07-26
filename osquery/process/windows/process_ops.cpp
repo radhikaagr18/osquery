@@ -20,7 +20,9 @@ std::string psidToString(PSID sid) {
     VLOG(1) << "ConvertSidToString failed with " << GetLastError();
     return std::string("");
   }
-  return std::string(sidOut);
+  std::string sidString(sidOut);
+  LocalFree(sidOut);
+  return sidString;
 }
 
 uint32_t getUidFromSid(PSID sid) {
@@ -200,7 +202,8 @@ bool isLauncherProcessDead(PlatformProcess& launcher) {
 }
 
 ModuleHandle platformModuleOpen(const std::string& path) {
-  return ::LoadLibraryW(stringToWstring(path).c_str());
+  return ::LoadLibraryExW(
+      stringToWstring(path).c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 }
 
 void* platformModuleGetSymbol(ModuleHandle module, const std::string& symbol) {

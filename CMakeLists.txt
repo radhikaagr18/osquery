@@ -84,11 +84,6 @@ function(main)
 endfunction()
 
 function(importLibraries)
-  set(python_module_list
-    markupsafe
-    jinja2
-  )
-
   set(library_descriptor_list
     "Linux,Darwin:augeas"
     "Linux:berkeley-db"
@@ -117,23 +112,19 @@ function(importLibraries)
     "Linux,Darwin:popt"
     "Linux,Darwin,Windows:rapidjson"
     "Linux,Darwin,Windows:rocksdb"
-    "Linux,Darwin:sleuthkit"
+    "Linux,Darwin,Windows:sleuthkit"
     "Linux,Darwin:smartmontools"
     "Linux,Darwin,Windows:sqlite"
     "Linux,Darwin:ssdeep-cpp"
     "Linux,Darwin,Windows:thrift"
     "Linux:util-linux"
-    "Linux,Darwin:yara"
+    "Linux,Darwin,Windows:yara"
     "Linux,Darwin,Windows:zlib"
     "Linux,Darwin,Windows:zstd"
     "Linux,Darwin,Windows:openssl"
     "Linux,Darwin,Windows:aws-sdk-cpp"
     "Linux,Darwin,Windows:icu"
   )
-
-  foreach(python_module ${python_module_list})
-    find_package("${python_module}" REQUIRED)
-  endforeach()
 
   foreach(library_descriptor ${library_descriptor_list})
     # Expand the library descriptor
@@ -151,7 +142,7 @@ function(importLibraries)
 
     find_package("${library}" REQUIRED)
 
-    # Facebook-provided libraries always come with the thirdparty_ prefix
+    # Skip libraries which already use our internal target name
     if(TARGET "thirdparty_${library}")
       continue()
 

@@ -8,10 +8,10 @@
 
 #include <osquery/tables.h>
 
+#include <osquery/core/windows/wmi.h>
 #include <osquery/utils/conversions/split.h>
 #include <osquery/utils/conversions/tryto.h>
-
-#include <osquery/core/windows/wmi.h>
+#include <osquery/utils/conversions/windows/strings.h>
 
 namespace osquery {
 namespace tables {
@@ -21,7 +21,8 @@ QueryData genOSVersion(QueryContext& context) {
   std::string version_string;
 
   const std::string kWmiQuery =
-      "SELECT CAPTION,VERSION,INSTALLDATE FROM Win32_OperatingSystem";
+      "SELECT CAPTION,VERSION,INSTALLDATE,OSARCHITECTURE FROM "
+      "Win32_OperatingSystem";
 
   const WmiRequest wmiRequest(kWmiQuery);
   const std::vector<WmiResultItem>& wmiResults = wmiRequest.results();
@@ -30,11 +31,15 @@ QueryData genOSVersion(QueryContext& context) {
     return {};
   }
 
-  wmiResults[0].GetString("InstallDate", r["install_date"]);
   std::string osName;
   wmiResults[0].GetString("Caption", osName);
   r["name"] = osName;
   r["codename"] = osName;
+
+  std::string cimInstallDate{""};
+  wmiResults[0].GetString("InstallDate", cimInstallDate);
+  r["install_date"] = BIGINT(cimDatetimeToUnixtime(cimInstallDate));
+
   wmiResults[0].GetString("Version", version_string);
   auto version = osquery::split(version_string, ".");
 
@@ -49,6 +54,8 @@ QueryData genOSVersion(QueryContext& context) {
   default:
     break;
   }
+
+  wmiResults[0].GetString("OSArchitecture", r["arch"]);
 
   r["platform"] = "windows";
   r["platform_like"] = "windows";

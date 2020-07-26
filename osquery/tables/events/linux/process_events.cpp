@@ -22,19 +22,25 @@ const std::unordered_map<int, std::string> kSyscallNameMap = {
     {__NR_execveat, "execveat"},
     {__NR_fork, "fork"},
     {__NR_vfork, "vfork"},
-    {__NR_clone, "clone"}};
-}
+    {__NR_clone, "clone"},
+    {__NR_kill, "kill"},
+    {__NR_tkill, "tkill"},
+    {__NR_tgkill, "tgkill"}};
+};
 
-FLAG(bool,
-     audit_allow_process_events,
-     true,
-     "Allow the audit publisher to install process event monitoring rules");
+DECLARE_bool(audit_allow_process_events);
 
 FLAG(bool,
      audit_allow_fork_process_events,
      false,
      "Allow the audit publisher to install process event monitoring rules to "
      "capture fork/vfork/clone system calls");
+
+FLAG(bool,
+     audit_allow_kill_process_events,
+     false,
+     "Allow the audit publisher to install process event monitoring rules to "
+     "capture kill/tkill/tgkill system calls");
 
 REGISTER(AuditProcessEventSubscriber, "event_subscriber", "process_events");
 
@@ -127,12 +133,17 @@ Status AuditProcessEventSubscriber::ProcessEvents(
     const auto& event_data = boost::get<SyscallAuditEventData>(event.data);
 
     bool is_exec_syscall{false};
+    bool is_kill_syscall{false};
     if (kExecProcessEventsSyscalls.count(event_data.syscall_number) > 0U) {
       is_exec_syscall = true;
 
     } else if (kForkProcessEventsSyscalls.count(event_data.syscall_number) >
                0U) {
       is_exec_syscall = false;
+
+    } else if (kKillProcessEventsSyscalls.count(event_data.syscall_number) >
+               0U) {
+      is_kill_syscall = true;
 
     } else {
       continue;
@@ -214,6 +225,17 @@ Status AuditProcessEventSubscriber::ProcessEvents(
         VLOG(1) << "Failed to parse the event: " << status.getMessage();
         continue;
       }
+
+    } else if (is_kill_syscall) {
+      const AuditEventRecord* obj_pid_recod =
+          GetEventRecord(event, AUDIT_OBJ_PID);
+
+      CopyFieldFromMap(row, syscall_event_record->fields, "tty", "");
+      CopyFieldFromMap(row, syscall_event_record->fields, "ses", "-1");
+      CopyFieldFromMap(row, syscall_event_record->fields, "comm", "");
+      CopyFieldFromMap(row, obj_pid_recod->fields, "ocomm", "-1");
+      CopyFieldFromMap(row, obj_pid_recod->fields, "oses", "-1");
+      CopyFieldFromMap(row, obj_pid_recod->fields, "oauid", "-1");
 
     } else {
       row["owner_uid"] = "0";

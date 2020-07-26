@@ -6,6 +6,9 @@
  *  the LICENSE file found in the root directory of this source tree.
  */
 
+#include <cerrno>
+#include <sys/utsname.h>
+
 #include <map>
 #include <regex>
 #include <string>
@@ -16,9 +19,12 @@
 #include <boost/filesystem/path.hpp>
 
 #include <osquery/filesystem/filesystem.h>
+#include <osquery/logger.h>
 #include <osquery/sql.h>
 #include <osquery/tables.h>
 #include <osquery/utils/conversions/split.h>
+#include <osquery/worker/ipc/platform_table_container_ipc.h>
+#include <osquery/worker/logging/glog/glog_logger.h>
 
 namespace osquery {
 namespace tables {
@@ -81,7 +87,7 @@ void genOSRelease(Row& r) {
   return;
 }
 
-QueryData genOSVersion(QueryContext& context) {
+QueryData genOSVersionImpl(QueryContext& context, Logger& logger) {
   Row r;
 
   // Set defaults if we cannot determine the version.
@@ -90,6 +96,7 @@ QueryData genOSVersion(QueryContext& context) {
   r["minor"] = "0";
   r["patch"] = "0";
   r["platform"] = "posix";
+  r["pid_with_namespace"] = "0";
 
   if (isReadable(kOSRelease)) {
     boost::system::error_code ec;
@@ -97,6 +104,14 @@ QueryData genOSVersion(QueryContext& context) {
     if (boost::filesystem::file_size(kOSRelease, ec) > 0) {
       genOSRelease(r);
     }
+  }
+
+  struct utsname uname_buf {};
+
+  if (uname(&uname_buf) == 0) {
+    r["arch"] = TEXT(uname_buf.machine);
+  } else {
+    LOG(INFO) << "Failed to determine the OS architecture, error " << errno;
   }
 
   std::string content;
@@ -143,5 +158,15 @@ QueryData genOSVersion(QueryContext& context) {
 
   return {r};
 }
+
+QueryData genOSVersion(QueryContext& context) {
+  if (hasNamespaceConstraint(context)) {
+    return generateInNamespace(context, "osversion", genOSVersionImpl);
+  } else {
+    GLOGLogger logger;
+    return genOSVersionImpl(context, logger);
+  }
+}
+
 } // namespace tables
 } // namespace osquery

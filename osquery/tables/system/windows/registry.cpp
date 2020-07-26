@@ -34,8 +34,8 @@
 #include <osquery/utils/conversions/split.h>
 #include <osquery/utils/conversions/tryto.h>
 #include <osquery/utils/conversions/windows/strings.h>
+#include <osquery/utils/conversions/windows/windows_time.h>
 
-#include <osquery/filesystem/fileops.h>
 #include <osquery/sql/sqlite_util.h>
 #include <osquery/tables/system/windows/registry.h>
 
@@ -203,10 +203,10 @@ Status getUsernameFromKey(const std::string& key, std::string& rUsername) {
   if (!ConvertStringSidToSidA(toks[1].c_str(), &sid)) {
     return Status(GetLastError(), "Could not convert string to sid");
   } else {
-    wchar_t accntName[UNLEN] = {0};
-    wchar_t domName[DNLEN] = {0};
-    unsigned long accntNameLen = UNLEN;
-    unsigned long domNameLen = DNLEN;
+    WCHAR accntName[UNLEN + 1] = {0};
+    WCHAR domName[DNLEN + 1] = {0};
+    DWORD accntNameLen = UNLEN + 1;
+    DWORD domNameLen = DNLEN + 1;
     SID_NAME_USE eUse;
     if (!LookupAccountSidW(nullptr,
                            sid,
@@ -227,9 +227,11 @@ inline void explodeRegistryPath(const std::string& path,
                                 std::string& rHive,
                                 std::string& rKey) {
   auto toks = osquery::split(path, kRegSep);
-  rHive = toks.front();
-  toks.erase(toks.begin());
-  rKey = osquery::join(toks, kRegSep);
+  if (!toks.empty()) {
+    rHive = toks.front();
+    toks.erase(toks.begin());
+    rKey = osquery::join(toks, kRegSep);
+  }
 }
 
 /// Microsoft helper function for getting the contents of a registry key
@@ -577,8 +579,13 @@ QueryData genRegistry(QueryContext& context) {
     }
     if (context.hasConstraint("path", LIKE)) {
       for (const auto& path : context.constraints["path"].getAll(LIKE)) {
-        auto status = expandRegistryGlobs(
-            path.substr(0, path.find_last_of(kRegSep)), keys);
+        Status status;
+        if (boost::ends_with(path, kSQLGlobRecursive)) {
+          status = expandRegistryGlobs(path, keys);
+        } else {
+          status = expandRegistryGlobs(
+              path.substr(0, path.find_last_of(kRegSep)), keys);
+        }
         if (!status.ok()) {
           LOG(INFO) << "Failed to expand globs: " + status.getMessage();
         }

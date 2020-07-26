@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <string>
 #include <map>
+#include <string>
 
 #include <osquery/utils/only_movable.h>
 
@@ -41,13 +41,13 @@ struct ScheduledQuery : private only_movable {
   size_t splayed_interval{0};
 
   /**
-   * @brief Queries are blacklisted based on logic in the configuration.
+   * @brief Queries are denylisted based on logic in the configuration.
    *
-   * Most calls to inspect scheduled queries will abstract away the blacklisting
-   * concept and only return non-blacklisted queries. The config may be asked
+   * Most calls to inspect scheduled queries will abstract away the denylisting
+   * concept and only return non-denylisted queries. The config may be asked
    * to return all queries, thus it is important to capture this optional data.
    */
-  bool blacklisted{false};
+  bool denylisted{false};
 
   /// Set of query options.
   std::map<std::string, bool> options;
@@ -59,6 +59,32 @@ struct ScheduledQuery : private only_movable {
   ScheduledQuery() = default;
   ScheduledQuery(ScheduledQuery&&) = default;
   ScheduledQuery& operator=(ScheduledQuery&&) = default;
+
+  /**
+   * @brief Returns true if the query is a snapshot query, otherwise false.
+   *
+   * @return A bool indicating if this query is a snapshot query.
+   */
+  inline bool isSnapshotQuery() const {
+    auto it = options.find("snapshot");
+    return it != options.end() && it->second;
+  }
+
+  /**
+   * @brief Returns true if removed rows should be reported, otherwise false.
+   *
+   * @return A bool indicating if this query reports removed rows.
+   */
+  inline bool reportRemovedRows() const {
+    auto it = options.find("removed");
+
+    if (it == options.end()) {
+      // If the option is missing, we do want to report removed rows.
+      return true;
+    }
+
+    return it->second;
+  }
 
   /// equals operator
   bool operator==(const ScheduledQuery& comp) const {

@@ -248,6 +248,9 @@ class EventPublisherPlugin : public Plugin,
    * osquery is about to end, the EventPublisher should close handle descriptors
    * unblock resources, and prepare to exit. This will be called from the main
    * thread after the run loop thread has exited.
+   *
+   * Expect this may be called multiple times, when the event loop stops and
+   * optionally by the publisher destructor.
    */
   void tearDown() override {}
 
@@ -375,6 +378,12 @@ class EventPublisherPlugin : public Plugin,
 
   /// A helper count of event publisher runloop iterations.
   std::atomic<size_t> restart_count_{0};
+
+ private:
+  /// Do not check for interrupted, instead use isEnding.
+  bool interrupted() override {
+    return false;
+  }
 
  private:
   /// Enable event factory "callins" through static publisher callbacks.
@@ -859,7 +868,11 @@ class EventFactory : private boost::noncopyable {
   template <typename PUB>
   static void fire(const EventContextRef& ec) {
     auto event_pub = getEventPublisher(getType<PUB>());
-    event_pub->fire(ec);
+    if (event_pub != nullptr) {
+      // A publisher may not exist anymore if an OS event callback is fired
+      // during process teardown. A publisher cannot-be-found log is generated.
+      event_pub->fire(ec);
+    }
   }
 
   /**

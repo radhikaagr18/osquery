@@ -8,11 +8,12 @@
  *  You may select, at your option, one of the above-listed licenses.
  */
 
+// Keep this included first (See #6507).
+#include <osquery/remote/http_client.h>
+
 #include <osquery/core.h>
 #include <osquery/logger.h>
-
 #include <osquery/filesystem/filesystem.h>
-#include <osquery/remote/http_client.h>
 #include <osquery/utils/azure/azure_util.h>
 #include <osquery/utils/info/platform_type.h>
 #include <osquery/utils/json/json.h>
@@ -26,7 +27,8 @@ namespace osquery {
 
 // 2018-02-01 is supported across all Azure regions, according to MS.
 const std::string kAzureMetadataEndpoint =
-    "http://169.254.169.254/metadata/instance/compute?api-version=2018-02-01";
+    "http://" + http::kInstanceMetadataAuthority +
+    "/metadata/instance/compute?api-version=2018-02-01";
 
 // 3 seconds should be more than enough time for the metadata endpoint to
 // respond.
