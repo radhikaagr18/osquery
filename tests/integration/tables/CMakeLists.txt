@@ -1,8 +1,9 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) 2014-present, The osquery authors
 #
-# This source code is licensed in accordance with the terms specified in
-# the LICENSE file found in the root directory of this source tree.
+# This source code is licensed as defined by the LICENSE file found in the
+# root directory of this source tree.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
 
 function(testsIntegrationTablesMain)
   generateTestsIntegrationTablesIntegrationtestshelper()
@@ -21,9 +22,9 @@ function(generateTestsIntegrationTablesIntegrationtestshelper)
 
   target_link_libraries(tests_integration_tables_integrationtestshelper PUBLIC
     osquery_cxx_settings
+    osquery_database
     osquery_sql
     osquery_utils
-    plugins_database_ephemeral
     thirdparty_boost
     thirdparty_googletest_headers
   )
@@ -34,7 +35,6 @@ function(generateTestsIntegrationTablesTestsTest)
     carbon_black_info.cpp
     carves.cpp
     chrome_extensions.cpp
-    cpuid.cpp
     curl.cpp
     curl_certificate.cpp
     etc_hosts.cpp
@@ -73,6 +73,10 @@ function(generateTestsIntegrationTablesTestsTest)
     device_hash.cpp
     device_partitions.cpp
   )
+
+  if(TARGET_PROCESSOR STREQUAL "x86_64")
+    list(APPEND source_files cpuid.cpp)
+  endif()
 
   if(DEFINED PLATFORM_POSIX)
     set(platform_source_files
@@ -261,6 +265,7 @@ function(generateTestsIntegrationTablesTestsTest)
       arp_cache.cpp
       authenticode.cpp
       autoexec.cpp
+      background_activities_moderator.cpp
       bitlocker_info.cpp
       certificates.cpp
       connectivity.cpp
@@ -276,6 +281,7 @@ function(generateTestsIntegrationTablesTestsTest)
       kernel_info.cpp
       kva_speculative_info.cpp
       logical_drives.cpp
+      office_mru.cpp
       ntdomains.cpp
       ntfs_acl_permissions.cpp
       patches.cpp
@@ -294,6 +300,7 @@ function(generateTestsIntegrationTablesTestsTest)
       winbaseobj.cpp
       windows_crashes.cpp
       windows_events.cpp
+      windows_eventlog.cpp
       windows_security_products.cpp
       wmi_bios_info.cpp
       wmi_cli_event_consumers.cpp
@@ -327,7 +334,6 @@ function(generateTestsIntegrationTablesTestsTest)
     osquery_utils_conversions
     osquery_utils_info
     plugins_config_tlsconfig
-    plugins_database_ephemeral
     specs_tables
     tests_integration_tables_integrationtestshelper
     thirdparty_googletest

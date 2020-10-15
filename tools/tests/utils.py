@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-#  Copyright (c) 2014-present, Facebook, Inc.
-#  All rights reserved.
+# Copyright (c) 2014-present, The osquery authors
 #
-#  This source code is licensed in accordance with the terms specified in
-#  the LICENSE file found in the root directory of this source tree.
+# This source code is licensed as defined by the LICENSE file found in the
+# root directory of this source tree.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
 
 import json
 import os
@@ -197,4 +198,3 @@ def profile_cmd(cmd, proc=None, shell=False, timeout=0, count=1):
     if stats.get("fds") is not None:
         rval["fds"] = stats["fds"]
     return rval
-    

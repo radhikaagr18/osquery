@@ -1,5 +1,10 @@
-include(CheckPIESupported)
-check_pie_supported()
+if(NOT DEFINED OSQUERY_TOOLCHAIN_SYSROOT)
+    include(CheckPIESupported)
+    check_pie_supported()
+    if(NOT CMAKE_C_LINK_PIE_SUPPORT OR NOT CMAKE_CXX_LINK_PIE_SUPPORT)
+        message(FATAL_ERROR "The linker for the current compiler do not support -fPIE or -pie")
+    endif()
+endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # The function creates the osquery_<c|cxx>_settings targets with compiler and linker flags
@@ -15,7 +20,15 @@ function(setupBuildFlags)
   add_library(c_settings INTERFACE)
 
   target_compile_features(cxx_settings INTERFACE cxx_std_14)
-  target_compile_features(c_settings INTERFACE c_std_11)
+
+  # There's no specific C11 conformance on MSVC
+  # and recent versions of CMake add the /std:c11 flag to the command line
+  # which makes librdkafka compilation fail due to _Thread_local not being defined,
+  # even if it's a C11 keyword.
+  # For some reason the compiler does not complain about the incorrect flag.
+  if(NOT DEFINED PLATFORM_WINDOWS)
+    target_compile_features(c_settings INTERFACE c_std_11)
+  endif()
 
   if(DEFINED PLATFORM_POSIX)
 
@@ -257,6 +270,7 @@ function(setupBuildFlags)
       wevtapi.lib
       shell32.lib
       gdi32.lib
+      mswsock.lib
     )
 
     set(osquery_windows_common_defines

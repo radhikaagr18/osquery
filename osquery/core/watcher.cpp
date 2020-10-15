@@ -1,9 +1,10 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <chrono>
@@ -20,16 +21,16 @@
 #include <boost/thread.hpp>
 
 #include <osquery/config/config.h>
+#include <osquery/core/shutdown.h>
 #include <osquery/core/sql/query_data.h>
 #include <osquery/core/watcher.h>
-#include <osquery/data_logger.h>
-#include <osquery/extensions.h>
+#include <osquery/extensions/extensions.h>
 #include <osquery/filesystem/fileops.h>
 #include <osquery/filesystem/filesystem.h>
-#include <osquery/logger.h>
+#include <osquery/logger/data_logger.h>
+#include <osquery/logger/logger.h>
 #include <osquery/process/process.h>
-#include <osquery/shutdown.h>
-#include <osquery/sql.h>
+#include <osquery/sql/sql.h>
 
 #include <osquery/utils/conversions/tryto.h>
 #include <osquery/utils/info/tool_type.h>
@@ -47,8 +48,8 @@ struct LimitDefinition {
 
 struct PerformanceChange {
   size_t sustained_latency;
-  size_t footprint;
-  size_t iv;
+  uint64_t footprint;
+  uint64_t iv;
   pid_t parent;
 };
 
@@ -127,7 +128,7 @@ CLI_FLAG(bool,
 
 CLI_FLAG(bool, disable_watchdog, false, "Disable userland watchdog process");
 
-void Watcher::resetWorkerCounters(size_t respawn_time) {
+void Watcher::resetWorkerCounters(uint64_t respawn_time) {
   // Reset the monitoring counters for the watcher.
   state_.sustained_latency = 0;
   state_.user_time = 0;
@@ -136,7 +137,7 @@ void Watcher::resetWorkerCounters(size_t respawn_time) {
 }
 
 void Watcher::resetExtensionCounters(const std::string& extension,
-                                     size_t respawn_time) {
+                                     uint64_t respawn_time) {
   WatcherExtensionsLocker locker;
   auto& state = get().extension_states_[extension];
   state.sustained_latency = 0;
@@ -330,8 +331,8 @@ void WatcherRunner::watchExtensions() {
   }
 }
 
-size_t WatcherRunner::delayedTime() const {
-  return getStartTime() + FLAGS_watchdog_delay;
+uint64_t WatcherRunner::delayedTime() const {
+  return Watcher::get().workerStartTime() + FLAGS_watchdog_delay;
 }
 
 bool WatcherRunner::watch(const PlatformProcess& child) const {
@@ -417,7 +418,7 @@ PerformanceChange getChange(const Row& r, PerformanceState& state) {
 
   auto user_time_diff = user_time - state.user_time;
   auto sys_time_diff = system_time - state.system_time;
-  auto cpu_utilization_time = user_time_diff + sys_time_diff;
+  UNSIGNED_BIGINT_LITERAL cpu_utilization_time = user_time_diff + sys_time_diff;
 
   if (cpu_utilization_time > cpu_ul) {
     state.sustained_latency++;
@@ -546,6 +547,7 @@ Status WatcherRunner::isChildSane(const PlatformProcess& child) const {
 
 void WatcherRunner::createWorker() {
   auto& watcher = Watcher::get();
+  watcher.workerStartTime(getUnixTime());
 
   {
     WatcherExtensionsLocker locker;
@@ -556,10 +558,10 @@ void WatcherRunner::createWorker() {
                    << watcher.workerRestartCount() << " times";
 
       // The configured automatic delay.
-      size_t delay = getWorkerLimit(WatchdogLimitType::RESPAWN_DELAY);
+      uint64_t delay = getWorkerLimit(WatchdogLimitType::RESPAWN_DELAY);
       // Exponential back off for quickly-respawning clients.
       delay += static_cast<size_t>(pow(2, watcher.workerRestartCount()));
-      delay = std::min(static_cast<size_t>(FLAGS_watchdog_max_delay), delay);
+      delay = std::min(static_cast<uint64_t>(FLAGS_watchdog_max_delay), delay);
       pause(std::chrono::seconds(delay));
     }
   }
@@ -672,7 +674,7 @@ void WatcherWatcherRunner::start() {
   }
 }
 
-size_t getWorkerLimit(WatchdogLimitType name) {
+uint64_t getWorkerLimit(WatchdogLimitType name) {
   if (kWatchdogLimits.count(name) == 0) {
     return 0;
   }

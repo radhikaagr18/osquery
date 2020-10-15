@@ -1,27 +1,27 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <thread>
 
 #include <gtest/gtest.h>
 
-#include <osquery/data_logger.h>
-#include <osquery/database.h>
+#include <osquery/core/plugins/logger.h>
+#include <osquery/core/system.h>
+#include <osquery/database/database.h>
 #include <osquery/filesystem/filesystem.h>
-#include <osquery/plugins/logger.h>
-#include <osquery/registry_factory.h>
-#include <osquery/system.h>
+#include <osquery/logger/data_logger.h>
+#include <osquery/registry/registry_factory.h>
 #include <osquery/utils/info/platform_type.h>
 #include <osquery/utils/system/time.h>
 
 namespace osquery {
 
-DECLARE_bool(disable_database);
 DECLARE_int32(logger_min_status);
 DECLARE_int32(logger_min_stderr);
 DECLARE_bool(logger_secondary_status_only);
@@ -36,9 +36,7 @@ class LoggerTests : public testing::Test {
   void SetUp() override {
     platformSetup();
     registryAndPluginInit();
-    FLAGS_disable_database = true;
-    DatabasePlugin::setAllowOpen(true);
-    DatabasePlugin::initPlugin();
+    initDatabasePluginForTesting();
 
     // Backup the logging status, then disable.
     FLAGS_disable_logging = false;

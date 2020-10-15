@@ -1,8 +1,9 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) 2014-present, The osquery authors
 #
-# This source code is licensed in accordance with the terms specified in
-# the LICENSE file found in the root directory of this source tree.
+# This source code is licensed as defined by the LICENSE file found in the
+# root directory of this source tree.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
 
 function(boostMain)
   set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -680,11 +681,17 @@ function(generateBoostContext)
     "${library_root}/src/execution_context.cpp"
   )
 
-  if(DEFINED PLATFORM_LINUX)
+  if(DEFINED PLATFORM_LINUX AND TARGET_PROCESSOR STREQUAL "x86_64")
     set(asm_source_file_list
       "${library_root}/src/asm/jump_x86_64_sysv_elf_gas.S"
       "${library_root}/src/asm/make_x86_64_sysv_elf_gas.S"
       "${library_root}/src/asm/ontop_x86_64_sysv_elf_gas.S"
+    )
+  elseif(DEFINED PLATFORM_LINUX AND TARGET_PROCESSOR STREQUAL "aarch64")
+    set(asm_source_file_list
+      "${library_root}/src/asm/jump_arm64_aapcs_elf_gas.S"
+      "${library_root}/src/asm/make_arm64_aapcs_elf_gas.S"
+      "${library_root}/src/asm/ontop_arm64_aapcs_elf_gas.S"
     )
   elseif(DEFINED PLATFORM_MACOS)
     set(asm_source_file_list
@@ -693,11 +700,19 @@ function(generateBoostContext)
       "${library_root}/src/asm/ontop_x86_64_sysv_macho_gas.S"
     )
   elseif(DEFINED PLATFORM_WINDOWS)
-    set(asm_source_file_list
-      "${library_root}/src/asm/jump_x86_64_ms_pe_masm.asm"
-      "${library_root}/src/asm/make_x86_64_ms_pe_masm.asm"
-      "${library_root}/src/asm/ontop_x86_64_ms_pe_masm.asm"
-    )
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+      set(asm_source_file_list
+        "${library_root}/src/asm/jump_i386_ms_pe_masm.asm"
+        "${library_root}/src/asm/make_i386_ms_pe_masm.asm"
+        "${library_root}/src/asm/ontop_i386_ms_pe_masm.asm"
+      )
+    else()
+      set(asm_source_file_list
+        "${library_root}/src/asm/jump_x86_64_ms_pe_masm.asm"
+        "${library_root}/src/asm/make_x86_64_ms_pe_masm.asm"
+        "${library_root}/src/asm/ontop_x86_64_ms_pe_masm.asm"
+      )
+    endif()
   endif()
 
   foreach(asm_source_file ${asm_source_file_list})
@@ -710,7 +725,7 @@ function(generateBoostContext)
     endif()
 
     if(DEFINED PLATFORM_WINDOWS)
-      set_property(SOURCE "${asm_source_file}" PROPERTY COMPILE_FLAGS "/Cp /Cx /Zp4")
+      set_property(SOURCE "${asm_source_file}" PROPERTY COMPILE_FLAGS "/Cp /Cx /Zp4 /safeseh")
     endif()
   endforeach()
 

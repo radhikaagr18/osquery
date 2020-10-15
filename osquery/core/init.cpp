@@ -1,9 +1,10 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <chrono>
@@ -29,18 +30,18 @@
 #include <boost/filesystem.hpp>
 
 #include <osquery/config/config.h>
-#include <osquery/core.h>
+#include <osquery/core/core.h>
+#include <osquery/core/flags.h>
+#include <osquery/core/shutdown.h>
 #include <osquery/core/watcher.h>
-#include <osquery/data_logger.h>
-#include <osquery/dispatcher.h>
-#include <osquery/events.h>
-#include <osquery/extensions.h>
+#include <osquery/dispatcher/dispatcher.h>
+#include <osquery/events/events.h>
+#include <osquery/extensions/extensions.h>
 #include <osquery/filesystem/filesystem.h>
-#include <osquery/flags.h>
-#include <osquery/numeric_monitoring.h>
+#include <osquery/logger/data_logger.h>
+#include <osquery/numeric_monitoring/numeric_monitoring.h>
 #include <osquery/process/process.h>
-#include <osquery/registry.h>
-#include <osquery/shutdown.h>
+#include <osquery/registry/registry.h>
 #include <osquery/utils/config/default_paths.h>
 #include <osquery/utils/info/platform_type.h>
 #include <osquery/utils/info/version.h>
@@ -124,8 +125,6 @@ DWORD kLegacyThreadId;
 /// When no flagfile is provided via CLI, attempt to read flag 'defaults'.
 const std::string kBackupDefaultFlagfile{OSQUERY_HOME "osquery.flags.default"};
 
-const size_t kDatabaseMaxRetryCount{25};
-const size_t kDatabaseRetryDelay{200};
 bool Initializer::isWorker_{false};
 
 namespace {
@@ -188,6 +187,7 @@ static inline void printUsage(const std::string& binary, ToolType tool) {
   }
 
   fprintf(stdout, EPILOG);
+  fflush(stdout);
 }
 
 Initializer::Initializer(int& argc,
@@ -262,6 +262,7 @@ Initializer::Initializer(int& argc,
                tool != ToolType::TEST) {
       printUsage(binary_, getToolType());
       shutdownNow();
+      return;
     }
     if (help.find("--flagfile") == 0) {
       default_flags = false;
@@ -269,10 +270,9 @@ Initializer::Initializer(int& argc,
   }
 
   if (isShell()) {
-    // The shell is transient, rewrite config-loaded paths.
-    FLAGS_disable_logging = true;
-    // The shell never will not fork a worker.
-    FLAGS_disable_watchdog = true;
+    // Configure default flag values that are different for the shell.
+    // Since these are set before flags are parsed, it is possible for the CLI
+    // to overwrite them.
     FLAGS_disable_events = true;
   }
 
@@ -289,6 +289,13 @@ Initializer::Initializer(int& argc,
 
   // Let gflags parse the non-help options/flags.
   GFLAGS_NAMESPACE::ParseCommandLineFlags(argc_, argv_, isShell());
+
+  if (isShell()) {
+    // Do not set these values before calling ParseCommandLineFlags.
+    // These values are force-set and ignore the configuration and CLI.
+    FLAGS_disable_logging = true;
+    FLAGS_disable_watchdog = true;
+  }
 
   // Initialize registries and plugins
   registryAndPluginInit();
@@ -420,8 +427,8 @@ void Initializer::initWatcher() const {
   // The watcher should not log into or use a persistent database.
   // The watcher already disabled database usage.
   if (isWatcher()) {
-    DatabasePlugin::setAllowOpen(true);
-    DatabasePlugin::initPlugin();
+    setDatabaseAllowOpen();
+    initDatabasePlugin();
   }
 
   // The watcher takes a list of paths to autoload extensions from.
@@ -515,24 +522,12 @@ void Initializer::start() const {
   }
 
   if (!isWatcher()) {
-    DatabasePlugin::setAllowOpen(true);
-    // A daemon must always have R/W access to the database.
-    DatabasePlugin::setRequireWrite(isDaemon());
-
-    for (size_t i = 1; i <= kDatabaseMaxRetryCount; i++) {
-      if (DatabasePlugin::initPlugin().ok()) {
-        break;
-      }
-
-      if (i == kDatabaseMaxRetryCount) {
-        auto message = std::string(RLOG(1629)) + binary_ +
-                       " initialize failed: Could not initialize database";
-        auto retcode = (isWorker()) ? EXIT_CATASTROPHIC : EXIT_FAILURE;
-        requestShutdown(retcode, message);
-        return;
-      }
-
-      sleepFor(kDatabaseRetryDelay);
+    setDatabaseAllowOpen();
+    auto status = initDatabasePlugin();
+    if (!status.ok()) {
+      auto retcode = (isWorker()) ? EXIT_CATASTROPHIC : EXIT_FAILURE;
+      requestShutdown(retcode, status.getMessage());
+      return;
     }
 
     // Ensure the database results version is up to date before proceeding
@@ -549,7 +544,7 @@ void Initializer::start() const {
   auto s = osquery::startExtensionManager();
   if (!s.ok()) {
     auto error_message =
-        "An error occured during extension manager startup: " + s.getMessage();
+        "An error occurred during extension manager startup: " + s.getMessage();
     auto severity =
         (FLAGS_disable_extensions) ? google::GLOG_INFO : google::GLOG_ERROR;
     if (severity == google::GLOG_INFO) {
@@ -670,7 +665,7 @@ int Initializer::shutdown(int retcode) const {
 
   // Hopefully release memory used by global string constructors in gflags.
   GFLAGS_NAMESPACE::ShutDownCommandLineFlags();
-  DatabasePlugin::shutdown();
+  shutdownDatabase();
 
   // Cancel the alarm.
   alarm_runnable.interrupt();

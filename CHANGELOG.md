@@ -1,3 +1,151 @@
+# osquery Changelog
+
+<a name="4.5.1"></a>
+## [4.5.1](https://github.com/osquery/osquery/releases/tag/4.5.1)
+
+[Git Commits](https://github.com/osquery/osquery/compare/4.5.0...4.5.1)
+
+### Under the Hood improvements
+
+- Improve carver tests by faking `postCarve` ([#6659](https://github.com/osquery/osquery/pull/6659))
+- Emit an error during carving, if the `carve` SQL function is disabled ([#6658](https://github.com/osquery/osquery/pull/6658))
+- Update `carves` specs to allow full scan ([#6657](https://github.com/osquery/osquery/pull/6657))
+- Update `carves` table to use JSON ([#6656](https://github.com/osquery/osquery/pull/6656))
+- Improve performance and accuracy of Windows `registry` querying ([#6647](https://github.com/osquery/osquery/pull/6647))
+- Refactor `ephemeral` database plugin into core and simplify tests ([#6648](https://github.com/osquery/osquery/pull/6648))
+
+### Table Changes
+
+- Support for Office MRU (most recently used) entries ([#6587](https://github.com/osquery/osquery/pull/6587))
+- Implement configurable timeout through WHERE clause on `curl_certificate` ([#6641](https://github.com/osquery/osquery/pull/6641))
+- Add `atom_packages` table spec to window ([#6649](https://github.com/osquery/osquery/pull/6649))
+- Add signature information to `authenticode` table on windows ([#6677](https://github.com/osquery/osquery/pull/6677))
+- Add additional AWS regions ([#6666](https://github.com/osquery/osquery/pull/6666))
+
+### Bug Fixes
+
+- Fix container overflow in `curl_certificate` ([#6664](https://github.com/osquery/osquery/pull/6664))
+- Fix handling of invalid array bound error with `EvtNext` function ([#6660](https://github.com/osquery/osquery/pull/6660))
+- Fix `wmi_bios_info` table searching ([#5246](https://github.com/osquery/osquery/pull/5246))
+- Fix `image` column within `drivers` table on Windows ([#6652](https://github.com/osquery/osquery/pull/6652))
+- Fix windows `dirPathsAreEqual` to use the documented way ([#6690](https://github.com/osquery/osquery/pull/6690))
+- Fix incorrect `stat()` return checking within process_events ([#6694](https://github.com/osquery/osquery/pull/6694))
+- Always flush `stdout` when called with `--help` ([#6693](https://github.com/osquery/osquery/pull/6693))
+
+### Documentation
+
+- Document max scheduled query interval ([#6683](https://github.com/osquery/osquery/pull/6683))
+- Update documentation around build steps ([#6681](https://github.com/osquery/osquery/pull/6681))
+- Documentation copy editing
+  ([#6676](https://github.com/osquery/osquery/pull/6676),
+  [#6665](https://github.com/osquery/osquery/pull/6665),
+  [#6662](https://github.com/osquery/osquery/pull/6662))
+- Add 4.5.0 CHANGELOG ([#6646](https://github.com/osquery/osquery/pull/6646))
+- Add 4.5.1 CHANGELOG ([#6692](https://github.com/osquery/osquery/pull/6692))
+
+### Build
+
+- Improve flaky python test handling ([#6654](https://github.com/osquery/osquery/pull/6654))
+- Restore `test_osqueryi` ([#6631](https://github.com/osquery/osquery/pull/6631))
+- Limit `osqueryd` CPU usage to 20% in systemd unit file ([#6644](https://github.com/osquery/osquery/pull/6644))
+- Improve flaky `test_osqueryi` ([#6688](https://github.com/osquery/osquery/pull/6688))
+- Add `cppcheck` support to macOS ([#6685](https://github.com/osquery/osquery/pull/6685))
+
+### Hardening
+
+- Add exception catching for table execution ([#6689](https://github.com/osquery/osquery/pull/6689))
+
+<a name="4.5.0"></a>
+## [4.5.0](https://github.com/osquery/osquery/releases/tag/4.5.0)
+
+[Git Commits](https://github.com/osquery/osquery/compare/4.4.0...4.5.0)
+
+We would like to thank all of the contributors working on
+bootstrapping the ARM64/AARCH64 support and Windows 32bit support.
+Additionally, we want to thank those working on Unicode support and
+all the bug fixes, documentation improvements, and new features.
+Thank you! :clap:
+
+### New Features
+
+- ARM64/AARCH64 beta support for Linux ([#6612](https://github.com/osquery/osquery/pull/6612))
+- Windows 32bit support ([#6543](https://github.com/osquery/osquery/pull/6543))
+- Fix buildup of RocksDB SST files ([#6606](https://github.com/osquery/osquery/pull/6606))
+
+### Under the Hood improvements
+
+- Remove selectAllFrom from Linux `process_events` callback ([#6638](https://github.com/osquery/osquery/pull/6638))
+- Remove database read only concept ([#6637](https://github.com/osquery/osquery/pull/6637))
+- Move database initialization retry logic into DB API ([#6633](https://github.com/osquery/osquery/pull/6633))
+- Move osquery/include files into respective CMake targets ([#6557](https://github.com/osquery/osquery/pull/6557))
+- Memoize `EventFactory::getType` ([#6555](https://github.com/osquery/osquery/pull/6555))
+- Update schedule counter behavior ([#6223](https://github.com/osquery/osquery/pull/6223))
+- Define `UNICODE` and `_UNICODE` preprocessors for windows ([#6338](https://github.com/osquery/osquery/pull/6338))
+- Add WMI utility function to convert datetime to FILETIME ([#5901](https://github.com/osquery/osquery/pull/5901))
+- Move osquery shutdown logic outside of `Initialize`r ([#6530](https://github.com/osquery/osquery/pull/6530))
+
+### Table Changes
+
+- Support for Windows Background Activity Moderator ([#6585](https://github.com/osquery/osquery/pull/6585))
+- Add `apparmor_events` table to Linux ([#4982](https://github.com/osquery/osquery/pull/4982))
+- Add `sigurl` column to get YARA signatures from an HTTPS server ([#6607](https://github.com/osquery/osquery/pull/6607))
+- Add `sigrules` column to pass YARA signatures within queries ([#6568](https://github.com/osquery/osquery/pull/6568))
+- Add non-evented table for querying `windows_event_log` ([#6563](https://github.com/osquery/osquery/pull/6563))
+- Improve `chassis_types` and `security_breach` columns within `chassis_info` ([#6608](https://github.com/osquery/osquery/pull/6608))
+- Fix bool type usage in `powershell_events` ([#6584](https://github.com/osquery/osquery/pull/6584))
+- Add `FileVersionRaw` column to `file` table for Windows ([#5771](https://github.com/osquery/osquery/pull/5771))
+- Enable YARA table on Windows ([#6564](https://github.com/osquery/osquery/pull/6564))
+- Add `dns_cache` table for Windows ([#6505](https://github.com/osquery/osquery/pull/6505))
+- Add support for processing KILL syscall ([#6435](https://github.com/osquery/osquery/pull/6435))
+- Add `startup_item`s table for Linux ([#6502](https://github.com/osquery/osquery/pull/6502))
+- Add `shimcache` table ([#6463](https://github.com/osquery/osquery/pull/6463))
+- Refactor `shell_history` to use generators (it will use less memory) ([#6541](https://github.com/osquery/osquery/pull/6541))
+
+### Bug Fixes
+
+- Set thread names correctly on macOS and Linux ([#6627](https://github.com/osquery/osquery/pull/6627))
+- Apply `--scheduler_timeout` correctly ([#6618](https://github.com/osquery/osquery/pull/6618))
+- Add check for `character_frequencies` size ([#6625](https://github.com/osquery/osquery/pull/6625))
+- Fix race in removing external `TablePlugins` ([#6623](https://github.com/osquery/osquery/pull/6623))
+- Force shell to disable watchdog and logger ([#6621](https://github.com/osquery/osquery/pull/6621))
+- Return early within the shell if relative flags are used ([#6605](https://github.com/osquery/osquery/pull/6605))
+- Apply watcher delay each time the worker is started ([#6604](https://github.com/osquery/osquery/pull/6604))
+- Set global output function for Thrift ([#6592](https://github.com/osquery/osquery/pull/6592))
+- Fix incorrect `readFile` params in `createPidFile` ([#6578](https://github.com/osquery/osquery/pull/6578))
+- Fix call to `LocalFree` on deinit ptr inside `getUidFromSid` ([#6579](https://github.com/osquery/osquery/pull/6579))
+- Fix `readFile` to observe requested read size ([#6569](https://github.com/osquery/osquery/pull/6569))
+- Replace fstream within `syslog_event`s with a custom non-blocking getline ([#6539](https://github.com/osquery/osquery/pull/6539))
+- Only fire events if a publisher exists ([#6553](https://github.com/osquery/osquery/pull/6553))
+- Fix Leak in `psidToString` ([#6548](https://github.com/osquery/osquery/pull/6548))
+- Fix memory leaks in `rpm_package_files` ([#6544](https://github.com/osquery/osquery/pull/6544))
+- Change "Symlink loop" message from warning to verbose ([#6545](https://github.com/osquery/osquery/pull/6545))
+
+### Documentation
+
+- Update process auditing docs schema link ([#6645](https://github.com/osquery/osquery/pull/6645))
+- Improve descriptions for the `processes` table ([#6596](https://github.com/osquery/osquery/pull/6596))
+- Replace slackin with Slack shared invite ([#6617](https://github.com/osquery/osquery/pull/6617))
+- Update copyright notices to osquery foundation ([#6589](https://github.com/osquery/osquery/pull/6589), [#6590](https://github.com/osquery/osquery/pull/6590))
+
+### Build
+
+- Fix Windows build by removing non existing C11 conformance ([#6629](https://github.com/osquery/osquery/pull/6629))
+- Remove `ExecStartPre` from systemd service unit ([#6586](https://github.com/osquery/osquery/pull/6586))
+- Fix pip upgrade warning within CI ([#6576](https://github.com/osquery/osquery/pull/6576))
+- Detect `MAJOR_IN_SYSMACROS`/`MKDEV` for librpm in CMake ([#6554](https://github.com/osquery/osquery/pull/6554))
+- Add `curl_certificate` tests ([#5281](https://github.com/osquery/osquery/pull/5281))
+- Update YARA library to 4.0.2 ([#6559](https://github.com/osquery/osquery/pull/6559))
+- Improve testing assumptions and flush fsevents when stopping ([#6552](https://github.com/osquery/osquery/pull/6552))
+- Fix the test utility to allow Windows profiling ([#6550](https://github.com/osquery/osquery/pull/6550))
+- Support ASAN for boost coroutine2 using ucontext ([#6531](https://github.com/osquery/osquery/pull/6531))
+- Update instructions for CPack package building ([#6529](https://github.com/osquery/osquery/pull/6529))
+- Use specific RPM variables to set the package name ([#6527](https://github.com/osquery/osquery/pull/6527))
+- Update compiler version used to v142 within Azure ([#6528](https://github.com/osquery/osquery/pull/6528))
+
+### Hardening
+
+- Restore PIE support being dropped on Linux ([#6611](https://github.com/osquery/osquery/pull/6611))
+
 <a name="4.4.0"></a>
 ## [4.4.0](https://github.com/osquery/osquery/releases/tag/4.4.0)
 
@@ -174,20 +322,24 @@
 [Git Commits](https://github.com/osquery/osquery/compare/4.1.2...4.2.0)
 
 ### New Features / Under the Hood improvements
+
 - TLS Testing infrastructure has been overhauled ([#6170](https://github.com/osquery/osquery/pull/6170))
 - Boost regex has been replaced with std ([#6236](https://github.com/osquery/osquery/pull/6236))
 - `community_id_v1` added as a SQL function ([#6211](https://github.com/osquery/osquery/pull/6211))
 
 ### Build
+
 - Fix format checking on Windows ([#6188](https://github.com/osquery/osquery/pull/6188))
 - Fix format folder exclusions for build checks ([#6201](https://github.com/osquery/osquery/pull/6201))
 - Fix the linking for extensions in build ([#6219](https://github.com/osquery/osquery/pull/6219))
 - Fix build to include windows optional features table ([#6207](https://github.com/osquery/osquery/pull/6207))
 
 ### Security Issues
+
 - [CVE-2020-1887] osquery does not properly verify the SNI hostname ([#6197](https://github.com/osquery/osquery/pull/6197))
 
 ### Bug Fixes
+
 - Carver no longer returns empty carves for hidden files ([#6183](https://github.com/osquery/osquery/pull/6183))
 - Address a race in the Dispatcher logic ([#6145](https://github.com/osquery/osquery/pull/6145))
 - Fix validation in 'last' table ([#6147](https://github.com/osquery/osquery/pull/6147))
@@ -199,6 +351,7 @@
 - Fix heap buffer overflow in callDoubleFunc and powerFunc ([#6225](https://github.com/osquery/osquery/pull/6225))
 
 ### Table Changes
+
 - Added table `firefox_addons` to All Platforms ([#6200](https://github.com/osquery/osquery/pull/6200))
 - Added table `ssh_configs` to All Platforms ([#6161](https://github.com/osquery/osquery/pull/6161))
 - Added table `user_ssh_keys` to All Platforms ([#6161](https://github.com/osquery/osquery/pull/6161))
@@ -363,7 +516,6 @@ It features a heavily reworked build system. This aims to provide flexibility an
 - macOS query pack: detect SearchAwesome malware ([#5713](https://github.com/osquery/osquery/pull/5713))
 - macOS query pack: detect when a process is tapping keyboard event ([#5345](https://github.com/osquery/osquery/pull/5345))
 
-
 ### Build
 
 - Refactor CMake build ([#5604](https://github.com/osquery/osquery/pull/5604), [#5627](https://github.com/osquery/osquery/pull/5627), [#5630](https://github.com/osquery/osquery/pull/5630), ([#5618](https://github.com/osquery/osquery/pull/5618)), ([#5619](https://github.com/osquery/osquery/pull/5619)))
@@ -373,7 +525,6 @@ It features a heavily reworked build system. This aims to provide flexibility an
 - Use `urllib2` to automatically handle HTTP 301/302 redirections ([#5612](https://github.com/osquery/osquery/pull/5612))
 - Update MSI package to install to `Program Files` on Windows ([#5579](https://github.com/osquery/osquery/pull/5579))
 - Linux custom toolchain integration ([#5759](https://github.com/osquery/osquery/pull/5759))
-
 
 ### Hardening
 
@@ -432,16 +583,16 @@ It features a heavily reworked build system. This aims to provide flexibility an
 - Added table `running_apps` on macOS ([#5216](https://github.com/osquery/osquery/pull/5216))
 - Added table `atom_packages` on macOS and Linux ([6d159d40](https://github.com/osquery/osquery/commit/6d159d40))
 - Remove EC2 tables on Windows ([#5657](https://github.com/osquery/osquery/pull/5657))
-- Added column `win_timestamp` to `time` table on Windows ([3bbe6c51](https://github.com/osquery/osquery/commit/3bbe6c51))
-- Added column `is_hidded` to `users` and `groups` table on macOS ([#5368](https://github.com/osquery/osquery/pull/5368))
-- Added column `profile` to `chrome_extensions` table ([#5213](https://github.com/osquery/osquery/pull/5213))
-- Added column `epoch` to `rpm_packages` table on Linux ([#5248](https://github.com/osquery/osquery/pull/5248))
-- Added column `sid` to `logged_in_users` table on Windows ([#5454](https://github.com/osquery/osquery/pull/5454))
-- Added column `registry_hive` to `logged_in_users` table on Windows ([#5454](https://github.com/osquery/osquery/pull/5454))
-- Added column `sid` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
-- Added column `store_location` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
-- Added column `store` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
-- Added column `username` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
-- Added column `store_id` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
-- Added column `product_version`  to `file` table on Windows ([#5431](https://github.com/osquery/osquery/pull/5431))
-- Added column `source` to `sudoers` table on POSIX systems ([#5350](https://github.com/osquery/osquery/pull/5350))
+- Add column `win_timestamp` to `time` table on Windows ([3bbe6c51](https://github.com/osquery/osquery/commit/3bbe6c51))
+- Add column `is_hidden` to `users` and `groups` table on macOS ([#5368](https://github.com/osquery/osquery/pull/5368))
+- Add column `profile` to `chrome_extensions` table ([#5213](https://github.com/osquery/osquery/pull/5213))
+- Add column `epoch` to `rpm_packages` table on Linux ([#5248](https://github.com/osquery/osquery/pull/5248))
+- Add column `sid` to `logged_in_users` table on Windows ([#5454](https://github.com/osquery/osquery/pull/5454))
+- Add column `registry_hive` to `logged_in_users` table on Windows ([#5454](https://github.com/osquery/osquery/pull/5454))
+- Add column `sid` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
+- Add column `store_location` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
+- Add column `store` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
+- Add column `username` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
+- Add column `store_id` to `certificates` table on Windows ([#5631](https://github.com/osquery/osquery/pull/5631))
+- Add column `product_version`  to `file` table on Windows ([#5431](https://github.com/osquery/osquery/pull/5431))
+- Add column `source` to `sudoers` table on POSIX systems ([#5350](https://github.com/osquery/osquery/pull/5350))

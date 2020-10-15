@@ -1,8 +1,9 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) 2014-present, The osquery authors
 #
-# This source code is licensed in accordance with the terms specified in
-# the LICENSE file found in the root directory of this source tree.
+# This source code is licensed as defined by the LICENSE file found in the
+# root directory of this source tree.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
 
 function(specsMain)
   add_osquery_library(specs_tables INTERFACE)
@@ -36,7 +37,6 @@ function(generateNativeTables)
     carves.table
     chrome_extensions.table
     chrome_extension_content_scripts.table
-    cpuid.table
     curl.table
     curl_certificate.table
     etc_hosts.table
@@ -72,9 +72,14 @@ function(generateNativeTables)
     utility/time.table
   )
 
+  if(TARGET_PROCESSOR STREQUAL "x86_64")
+    list(APPEND platform_independent_spec_files cpuid.table)
+  endif()
+
   set(platform_dependent_spec_files
     "arp_cache.table:linux,macos,windows"
-    "atom_packages.table:linux,macos"
+    "atom_packages.table:linux,macos,windows"
+    "office_mru.table:windows"
     "darwin/account_policy_data.table:macos"
     "darwin/ad_config.table:macos"
     "darwin/alf.table:macos"
@@ -171,6 +176,7 @@ function(generateNativeTables)
     "linux/elf_sections.table:linux"
     "linux/selinux_settings.table:linux"
     "linux/apparmor_profiles.table:linux"
+    "linux/apparmor_events.table:linux"
     "linwin/intel_me_info.table:linux,windows"
     "lldpd/lldp_neighbors.table:linux,macos,freebsd"
     "kernel_info.table:linux,macos,windows"
@@ -247,6 +253,7 @@ function(generateNativeTables)
     "sleuthkit/device_partitions.table:linux,macos,freebsd,windows"
     "smart/smart_drive_info.table:linux,macos"
     "user_groups.table:linux,macos,windows"
+    "windows/background_activities_moderator.table:windows"
     "windows/bitlocker_info.table:windows"
     "windows/chassis_info.table:windows"
     "windows/logon_sessions.table:windows"
@@ -271,6 +278,7 @@ function(generateNativeTables)
     "windows/wmi_filter_consumer_binding.table:windows"
     "windows/wmi_event_filters.table:windows"
     "windows/windows_events.table:windows"
+    "windows/windows_eventlog.table:windows"
     "windows/appcompat_shims.table:windows"
     "windows/ntfs_journal_events.table:windows"
     "windows/powershell_events.table:windows"

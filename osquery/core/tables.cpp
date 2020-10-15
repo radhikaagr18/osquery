@@ -1,18 +1,19 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <osquery/utils/json/json.h>
 
-#include <osquery/database.h>
-#include <osquery/flags.h>
-#include <osquery/logger.h>
-#include <osquery/registry_factory.h>
-#include <osquery/tables.h>
+#include <osquery/core/flags.h>
+#include <osquery/core/tables.h>
+#include <osquery/database/database.h>
+#include <osquery/logger/logger.h>
+#include <osquery/registry/registry_factory.h>
 #include <osquery/utils/conversions/tryto.h>
 
 #include <climits>
@@ -23,8 +24,8 @@ FLAG(bool, disable_caching, false, "Disable scheduled query caching");
 
 CREATE_LAZY_REGISTRY(TablePlugin, "table");
 
-size_t TablePlugin::kCacheInterval = 0;
-size_t TablePlugin::kCacheStep = 0;
+uint64_t TablePlugin::kCacheInterval = 0;
+uint64_t TablePlugin::kCacheStep = 0;
 
 #define kDisableRowId "WITHOUT ROWID"
 
@@ -211,7 +212,7 @@ static bool cacheAllowed(const TableColumns& cols, const QueryContext& ctx) {
   return true;
 }
 
-bool TablePlugin::isCached(size_t step, const QueryContext& ctx) const {
+bool TablePlugin::isCached(uint64_t step, const QueryContext& ctx) const {
   if (FLAGS_disable_caching) {
     return false;
   }
@@ -230,8 +231,8 @@ TableRows TablePlugin::getCache() const {
   return results;
 }
 
-void TablePlugin::setCache(size_t step,
-                           size_t interval,
+void TablePlugin::setCache(uint64_t step,
+                           uint64_t interval,
                            const QueryContext& ctx,
                            const TableRows& results) {
   if (FLAGS_disable_caching || !cacheAllowed(columns(), ctx)) {

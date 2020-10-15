@@ -1,17 +1,18 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
-#include <osquery/core.h>
-#include <osquery/logger.h>
-#include <osquery/tables.h>
+#include <osquery/core/core.h>
+#include <osquery/core/tables.h>
+#include <osquery/logger/logger.h>
 #include <osquery/tables/system/windows/registry.h>
-#include <osquery/tables/system/windows/userassist.h>
 #include <osquery/utils/conversions/tryto.h>
+#include <osquery/utils/conversions/windows/windows_time.h>
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -56,10 +57,17 @@ auto parseShimcacheData(const std::string& token,
   }
 
   // Convert string to size_t for file path length
-  size_t shimcache_file_path = tryTo<std::size_t>(path_length, 16).takeOr(0_sz);
+  uint64_t shimcache_file_path =
+      tryTo<std::uint64_t>(path_length, 16).takeOr(0_sz);
+
+  // If the file path length is zero then there is no path
+  if (shimcache_file_path == 0) {
+    shimcache.last_modified = 0LL;
+    return shimcache;
+  }
 
   // Registry data is in Unicode (extra 0x00)
-  std::string path = token.substr(20, shimcache_file_path * 2);
+  std::string path = token.substr(20, (size_t)shimcache_file_path * 2);
   boost::erase_all(path, "00");
 
   // Windows Store entries have extra data, the extra data includes tabs in the
@@ -72,7 +80,7 @@ auto parseShimcacheData(const std::string& token,
   try {
     string_path = boost::algorithm::unhex(path);
   } catch (const boost::algorithm::hex_decode_error& /* e */) {
-    LOG(WARNING) << "Failed to decode Shimcache hex values to string";
+    LOG(WARNING) << "Failed to decode Shimcache hex values to string: " << path;
     shimcache.last_modified = 0LL;
     return shimcache;
   }
@@ -88,21 +96,21 @@ auto parseShimcacheData(const std::string& token,
   } else {
     shimcache_modified_start = 20;
   }
-  std::string shimcache_time =
-      token.substr(shimcache_modified_start + shimcache_file_path * 2, 16);
+  std::string shimcache_time = token.substr(
+      shimcache_modified_start + (size_t)shimcache_file_path * 2, 16);
 
-  // Check to make sure the shimcache entry is greater than zero
-  if (!string_path.empty()) {
-    // Get last modified time of the file
-    shimcache.last_modified = littleEndianToUnixTime(shimcache_time);
-  } else {
-    shimcache.last_modified = 0LL;
-  }
+  // Sometimes Shimcache artifacts have 0 as timestamp, if so skip filetime
+  // converstion
+  shimcache.last_modified = (shimcache_time == "0000000000000000")
+                                ? 0LL
+                                : littleEndianToUnixTime(shimcache_time);
 
   if (execution_flag_exists == true) {
     int shimcache_flag =
         tryTo<int>(
-            token.substr(execution_flag_start + shimcache_file_path * 2, 2), 16)
+            token.substr(execution_flag_start + (size_t)shimcache_file_path * 2,
+                         2),
+            16)
             .takeOr(0);
     // Perform Bitwise AND to determine TRUE or FALSE
     if (shimcache_flag & 2) {
@@ -181,7 +189,12 @@ void parseEntry(const Row& aKey, size_t& index, QueryData& results) {
 
   // Get last appcopmat entry
   token = data.substr(0, pos);
-  createRow(parseShimcacheData(token, execution_flag_exists));
+  if (token.length() > 20) {
+    createRow(parseShimcacheData(token, execution_flag_exists));
+  } else {
+    LOG(ERROR) << "Shimcache entry does not meet length requirements: "
+               << token;
+  }
 }
 
 QueryData genShimcache(QueryContext& context) {

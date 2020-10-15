@@ -1,8 +1,9 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) 2014-present, The osquery authors
 #
-# This source code is licensed in accordance with the terms specified in
-# the LICENSE file found in the root directory of this source tree.
+# This source code is licensed as defined by the LICENSE file found in the
+# root directory of this source tree.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
 
 set(linux_supported_packaging_systems
   DEB
@@ -331,7 +332,7 @@ function(generatePackageTarget)
   if(DEFINED PLATFORM_LINUX)
     set(OSQUERY_PACKAGE_RELEASE "1.linux")
     if(CPACK_GENERATOR STREQUAL "TGZ")
-      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}_${OSQUERY_PACKAGE_RELEASE}_x86_64")
+      set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}_${OSQUERY_PACKAGE_RELEASE}_${TARGET_PROCESSOR}")
       set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0)
       set(CPACK_SET_DESTDIR ON)
     elseif(CPACK_GENERATOR STREQUAL "DEB")
@@ -398,7 +399,7 @@ function(generatePackageTarget)
       set(CPACK_NUGET_PACKAGE_AUTHORS "${CPACK_PACKAGE_NAME}")
       set(CPACK_NUGET_PACKAGE_TITLE "${CPACK_PACKAGE_NAME}")
       set(CPACK_NUGET_PACKAGE_OWNERS "${CPACK_PACKAGE_NAME}")
-      set(CPACK_NUGET_PACKAGE_COPYRIGHT "Copyright (c) 2014-present, Facebook, Inc. All rights reserved.")
+      set(CPACK_NUGET_PACKAGE_COPYRIGHT "Copyright (c) 2014-present, The osquery authors. See LICENSE.")
       set(CPACK_NUGET_PACKAGE_LICENSEURL "${OSQUERY_REPO}blob/master/LICENSE")
       set(CPACK_NUGET_PACKAGE_ICONURL "${OSQUERY_REPO}blob/master/tools/osquery.ico")
       set(CPACK_NUGET_PACKAGE_DESCRIPTION_SUMMARY "

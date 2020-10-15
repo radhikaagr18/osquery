@@ -1,9 +1,10 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <algorithm>
@@ -12,16 +13,17 @@
 #include <boost/format.hpp>
 #include <boost/io/detail/quoted_manip.hpp>
 
+#include <osquery/carver/carver.h>
 #include <osquery/config/config.h>
-#include <osquery/core.h>
-#include <osquery/data_logger.h>
-#include <osquery/database.h>
-#include <osquery/flags.h>
-#include <osquery/numeric_monitoring.h>
+#include <osquery/core/core.h>
+#include <osquery/core/flags.h>
+#include <osquery/core/query.h>
+#include <osquery/core/shutdown.h>
+#include <osquery/database/database.h>
+#include <osquery/logger/data_logger.h>
+#include <osquery/numeric_monitoring/numeric_monitoring.h>
 #include <osquery/process/process.h>
 #include <osquery/profiler/code_profiler.h>
-#include <osquery/query.h>
-#include <osquery/shutdown.h>
 
 #include <osquery/utils/system/time.h>
 
@@ -31,13 +33,16 @@
 
 namespace osquery {
 
-FLAG(uint64, schedule_timeout, 0, "Limit the schedule, 0 for no limit");
+FLAG(uint64,
+     schedule_timeout,
+     0,
+     "Limit the schedule to a duration in seconds, 0 for no limit");
 
 FLAG(uint64, schedule_max_drift, 60, "Max time drift in seconds");
 
 FLAG(uint64,
      schedule_reload,
-     300,
+     3600,
      "Interval in seconds to reload database arenas");
 
 FLAG(uint64, schedule_epoch, 0, "Epoch for scheduled queries");
@@ -182,14 +187,20 @@ void SchedulerRunner::calculateTimeDriftAndMaybePause(
   }
 }
 
-void SchedulerRunner::maybeRunDecorators(size_t time_step) {
+void SchedulerRunner::maybeRunDecorators(uint64_t time_step) {
   // Configuration decorators run on 60 second intervals only.
   if ((time_step % 60) == 0) {
     runDecorators(DECORATE_INTERVAL, time_step);
   }
 }
 
-void SchedulerRunner::maybeReloadSchedule(size_t time_step) {
+void SchedulerRunner::maybeScheduleCarves(uint64_t time_step) {
+  if ((time_step % 60) == 0) {
+    scheduleCarves();
+  }
+}
+
+void SchedulerRunner::maybeReloadSchedule(uint64_t time_step) {
   if (FLAGS_schedule_reload > 0 && (time_step % FLAGS_schedule_reload) == 0) {
     if (FLAGS_schedule_reload_sql) {
       SQLiteDBManager::resetPrimary();
@@ -198,7 +209,7 @@ void SchedulerRunner::maybeReloadSchedule(size_t time_step) {
   }
 }
 
-void SchedulerRunner::maybeFlushLogs(size_t time_step) {
+void SchedulerRunner::maybeFlushLogs(uint64_t time_step) {
   // GLog is not re-entrant, so logs must be flushed in a dedicated thread.
   if ((time_step % 3) == 0) {
     relayStatusLogs(true);
@@ -208,6 +219,9 @@ void SchedulerRunner::maybeFlushLogs(size_t time_step) {
 void SchedulerRunner::start() {
   // Start the counter at the second.
   auto i = osquery::getUnixTime();
+  // Timeout is the number of seconds from starting.
+  timeout_ += (timeout_ == 0) ? 0 : i;
+
   for (; (timeout_ == 0) || (i <= timeout_); ++i) {
     auto start_time_point = std::chrono::steady_clock::now();
     Config::get().scheduledQueries(([&i](const std::string& name,
@@ -229,6 +243,7 @@ void SchedulerRunner::start() {
     maybeRunDecorators(i);
     maybeReloadSchedule(i);
     maybeFlushLogs(i);
+    maybeScheduleCarves(i);
 
     auto loop_step_duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -237,6 +252,12 @@ void SchedulerRunner::start() {
     if (interrupted()) {
       break;
     }
+  }
+
+  // Scheduler ended.
+  if (!interrupted()) {
+    LOG(INFO) << "The scheduler ended after " << timeout_ << " seconds";
+    requestShutdown();
   }
 }
 

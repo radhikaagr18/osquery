@@ -1,14 +1,15 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #pragma once
 
-#include <osquery/events.h>
+#include <osquery/events/events.h>
 #include <osquery/utils/mutex.h>
 
 #include <boost/noncopyable.hpp>
@@ -86,7 +87,7 @@ class NonBlockingFStream : public boost::noncopyable {
    * written and our internal buffer overflows then no data will be output.
    *
    * Overflowing the internal buffer does not break the reading. If this occures
-   * then expect a line to be truncated and only yeild the max bytes.
+   * then expect a line to be truncated and only yield the max bytes.
    */
   Status getline(std::string& output);
 

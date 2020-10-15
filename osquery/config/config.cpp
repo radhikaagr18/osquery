@@ -1,9 +1,10 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <algorithm>
@@ -19,17 +20,17 @@
 #include <boost/iterator/filter_iterator.hpp>
 
 #include <osquery/config/config.h>
-#include <osquery/database.h>
-#include <osquery/events.h>
-#include <osquery/flagalias.h>
-#include <osquery/flags.h>
+#include <osquery/config/packs.h>
+#include <osquery/core/flagalias.h>
+#include <osquery/core/flags.h>
+#include <osquery/core/shutdown.h>
+#include <osquery/core/system.h>
+#include <osquery/core/tables.h>
+#include <osquery/database/database.h>
+#include <osquery/events/events.h>
 #include <osquery/hashing/hashing.h>
-#include <osquery/logger.h>
-#include <osquery/packs.h>
-#include <osquery/registry.h>
-#include <osquery/shutdown.h>
-#include <osquery/system.h>
-#include <osquery/tables.h>
+#include <osquery/logger/logger.h>
+#include <osquery/registry/registry.h>
 
 #include <osquery/utils/conversions/split.h>
 #include <osquery/utils/conversions/tryto.h>
@@ -199,7 +200,7 @@ class Schedule : private boost::noncopyable {
    * failures. If a query caused a worker to fail it will be recorded during
    * the next execution and saved to the denylist.
    */
-  std::map<std::string, size_t> denylist_;
+  std::map<std::string, uint64_t> denylist_;
 
  private:
   friend class Config;
@@ -274,13 +275,13 @@ class ConfigRefreshRunner : public InternalRunnable {
 
  private:
   /// The current refresh rate in seconds.
-  std::atomic<size_t> refresh_sec_{0};
+  std::atomic<uint64_t> refresh_sec_{0};
 
  private:
   friend class Config;
 };
 
-void restoreScheduleDenylist(std::map<std::string, size_t>& denylist) {
+void restoreScheduleDenylist(std::map<std::string, uint64_t>& denylist) {
   std::string content;
   getDatabaseValue(kPersistentSettings, kFailedQueries, content);
   auto denylist_pairs = osquery::split(content, ":");
@@ -289,17 +290,17 @@ void restoreScheduleDenylist(std::map<std::string, size_t>& denylist) {
     return;
   }
 
-  size_t current_time = getUnixTime();
+  uint64_t current_time = getUnixTime();
   for (size_t i = 0; i < denylist_pairs.size() / 2; i++) {
     // Fill in a mapping of query name to time the denylist expires.
     auto expire = tryTo<long long>(denylist_pairs[(i * 2) + 1], 10).takeOr(0ll);
-    if (expire > 0 && current_time < (size_t)expire) {
-      denylist[denylist_pairs[(i * 2)]] = (size_t)expire;
+    if (expire > 0 && current_time < (uint64_t)expire) {
+      denylist[denylist_pairs[(i * 2)]] = (uint64_t)expire;
     }
   }
 }
 
-void saveScheduleDenylist(const std::map<std::string, size_t>& denylist) {
+void saveScheduleDenylist(const std::map<std::string, uint64_t>& denylist) {
   std::string content;
   for (const auto& query : denylist) {
     if (!content.empty()) {
@@ -404,7 +405,7 @@ void Config::removeFiles(const std::string& source) {
  * @param blt The time the query was originally denylisted.
  * @param query The scheduled query and its options.
  */
-static inline bool denylistExpired(size_t blt, const ScheduledQuery& query) {
+static inline bool denylistExpired(uint64_t blt, const ScheduledQuery& query) {
   if (getUnixTime() > blt) {
     return true;
   }
@@ -513,11 +514,11 @@ Status Config::refresh() {
   return status;
 }
 
-void Config::setRefresh(size_t refresh_sec) {
+void Config::setRefresh(uint64_t refresh_sec) {
   refresh_runner_->refresh_sec_ = refresh_sec;
 }
 
-size_t Config::getRefresh() const {
+uint64_t Config::getRefresh() const {
   return refresh_runner_->refresh_sec_;
 }
 
@@ -937,9 +938,9 @@ void Config::purge() {
     }
 
     // Parse the timestamp and compare.
-    size_t last_executed = 0;
+    uint64_t last_executed = 0;
     try {
-      last_executed = boost::lexical_cast<size_t>(content);
+      last_executed = boost::lexical_cast<uint64_t>(content);
     } catch (const boost::bad_lexical_cast& /* e */) {
       // Erase the timestamp as is it potentially corrupt.
       deleteDatabaseValue(kPersistentSettings, "timestamp." + saved_query);
@@ -996,7 +997,7 @@ void ConfigParserPlugin::reset() {
 }
 
 void Config::recordQueryPerformance(const std::string& name,
-                                    size_t delay,
+                                    uint64_t delay,
                                     const Row& r0,
                                     const Row& r1) {
   RecursiveLock lock(config_performance_mutex_);

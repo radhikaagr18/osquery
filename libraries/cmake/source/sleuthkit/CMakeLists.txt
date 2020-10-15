@@ -1,8 +1,9 @@
-# Copyright (c) 2014-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) 2014-present, The osquery authors
 #
-# This source code is licensed in accordance with the terms specified in
-# the LICENSE file found in the root directory of this source tree.
+# This source code is licensed as defined by the LICENSE file found in the
+# root directory of this source tree.
+#
+# SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
 
 function(sleuthkitMain)
   set(library_root "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -13,7 +14,6 @@ function(sleuthkitMain)
     "${library_root}/tsk/auto/auto.cpp"
     "${library_root}/tsk/auto/auto_db.cpp"
     "${library_root}/tsk/auto/case_db.cpp"
-    "${library_root}/tsk/auto/db_sqlite.cpp"
     "${library_root}/tsk/auto/guid.cpp"
     "${library_root}/tsk/auto/is_image_supported.cpp"
     "${library_root}/tsk/auto/tsk_db.cpp"
@@ -23,7 +23,6 @@ function(sleuthkitMain)
     "${library_root}/tsk/fs/walk_cpp.cpp"
     "${library_root}/tsk/fs/yaffs.cpp"
     "${library_root}/tsk/hashdb/binsrch_index.cpp"
-    "${library_root}/tsk/hashdb/sqlite_hdb.cpp"
     "${library_root}/tsk/img/img_writer.cpp"
   )
 
@@ -140,10 +139,6 @@ function(sleuthkitMain)
 
   target_link_libraries(thirdparty_sleuthkit_c PUBLIC
     thirdparty_zlib
-  )
-
-  target_link_libraries(thirdparty_sleuthkit_cpp PUBLIC
-    thirdparty_sqlite
   )
 
   target_link_libraries(thirdparty_sleuthkit_c PRIVATE

@@ -1,9 +1,10 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <fcntl.h>
@@ -45,14 +46,14 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include <osquery/core.h>
-#include <osquery/database.h>
+#include <osquery/core/core.h>
+#include <osquery/core/flags.h>
+#include <osquery/core/system.h>
+#include <osquery/database/database.h>
 #include <osquery/filesystem/filesystem.h>
-#include <osquery/flags.h>
-#include <osquery/logger.h>
+#include <osquery/logger/logger.h>
 #include <osquery/process/process.h>
-#include <osquery/sql.h>
-#include <osquery/system.h>
+#include <osquery/sql/sql.h>
 
 #ifdef WIN32
 #include "osquery/core/windows/wmi.h"
@@ -107,7 +108,7 @@ const std::vector<std::string> kPlaceholderHardwareUUIDList{
 };
 
 /// The time osquery was started.
-std::atomic<size_t> kStartTime{0};
+std::atomic<uint64_t> kStartTime{0};
 } // namespace
 
 #ifdef WIN32
@@ -351,7 +352,7 @@ Status createPidFile() {
   if (pathExists(pidfile_path).ok()) {
     // if it exists, check if that pid is running.
     std::string content;
-    auto read_status = readFile(pidfile_path, content, true);
+    auto read_status = readFile(pidfile_path, content);
     if (!read_status.ok()) {
       return Status(1, "Could not read pidfile: " + read_status.toString());
     }
@@ -382,7 +383,7 @@ bool PlatformProcess::cleanup() const {
   }
 
   size_t delay = 0;
-  size_t timeout = (FLAGS_alarm_timeout + 1) * 1000;
+  auto timeout = (FLAGS_alarm_timeout + 1) * 1000;
   while (delay < timeout) {
     int status = 0;
     if (checkStatus(status) == PROCESS_EXITED) {
@@ -543,20 +544,21 @@ DropPrivileges::~DropPrivileges() {
 
 Status setThreadName(const std::string& name) {
 #if defined(__APPLE__)
-  int return_code = pthread_setname_np(name.c_str());
+  int return_code = pthread_setname_np(name.substr(0, 15).c_str());
   return return_code == 0
              ? Status::success()
              : Status::failure("pthread_setname_np failed with error " +
                                std::to_string(return_code));
 #elif defined(__linux__)
-  int return_code = pthread_setname_np(pthread_self(), name.c_str());
+  int return_code =
+      pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
   return return_code == 0
              ? Status::success()
              : Status::failure("pthread_setname_np failed with error " +
                                std::to_string(return_code));
 #elif defined(__FreeBSD__)
   // FreeBSD silently ignores errors and does not return an error code
-  pthread_set_name_np(pthread_self(), name.c_str());
+  pthread_set_name_np(pthread_self(), name.substr(0, 15).c_str());
   return Status::success();
 #elif defined(WIN32)
   // SetThreadDescription is available in builds newer than 1607 of windows 10
@@ -579,11 +581,11 @@ Status setThreadName(const std::string& name) {
 #endif
 }
 
-void setStartTime(size_t st) {
+void setStartTime(uint64_t st) {
   kStartTime = st;
 }
 
-size_t getStartTime() {
+uint64_t getStartTime() {
   return kStartTime;
 }
 

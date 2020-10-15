@@ -1,35 +1,34 @@
 /**
- *  Copyright (c) 2014-present, Facebook, Inc.
- *  All rights reserved.
+ * Copyright (c) 2014-present, The osquery authors
  *
- *  This source code is licensed in accordance with the terms specified in
- *  the LICENSE file found in the root directory of this source tree.
+ * This source code is licensed as defined by the LICENSE file found in the
+ * root directory of this source tree.
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-2.0-only)
  */
 
 #include <gtest/gtest.h>
 
-#include <osquery/core.h>
-#include <osquery/database.h>
-#include <osquery/logger.h>
-#include <osquery/registry.h>
-#include <osquery/sql.h>
+#include <osquery/core/core.h>
+#include <osquery/core/system.h>
+#include <osquery/database/database.h>
+#include <osquery/logger/logger.h>
+#include <osquery/registry/registry.h>
 #include <osquery/sql/dynamic_table_row.h>
-#include <osquery/system.h>
+#include <osquery/sql/sql.h>
 
 #include <osquery/sql/virtual_table.h>
 
 namespace osquery {
 
-DECLARE_bool(disable_database);
+DECLARE_bool(table_exceptions);
 
 class VirtualTableTests : public testing::Test {
  public:
   void SetUp() override {
     platformSetup();
     registryAndPluginInit();
-    FLAGS_disable_database = true;
-    DatabasePlugin::setAllowOpen(true);
-    DatabasePlugin::initPlugin();
+    initDatabasePluginForTesting();
   }
 };
 
@@ -1191,6 +1190,53 @@ TEST_F(VirtualTableTests, test_noindex_constraints) {
   ASSERT_EQ(1U, tablePlugin->scans);
   ASSERT_EQ(2U, results.size());
   ASSERT_EQ("0", results[1]["straints"]);
+}
+
+class exceptionalTablePlugin : public TablePlugin {
+ private:
+  TableColumns columns() const override {
+    return {
+        std::make_tuple("col1", TEXT_TYPE, ColumnOptions::DEFAULT),
+    };
+  }
+
+ public:
+  TableRows generate(QueryContext& context) override {
+    throw std::runtime_error("error");
+    return TableRows();
+  }
+
+ private:
+  FRIEND_TEST(VirtualTableTests, test_table_exceptions);
+};
+
+TEST_F(VirtualTableTests, test_table_exceptions) {
+  // Add testing table to the registry.
+  auto tables = RegistryFactory::get().registry("table");
+  auto exceptional = std::make_shared<exceptionalTablePlugin>();
+  tables->add("exceptional", exceptional);
+  auto dbc = SQLiteDBManager::getUnique();
+  attachTableInternal(
+      "exceptional", exceptional->columnDefinition(false), dbc, false);
+
+  auto backup_flag = FLAGS_table_exceptions;
+  FLAGS_table_exceptions = false;
+  {
+    QueryData results;
+    auto status = queryInternal("SELECT * FROM exceptional", results, dbc);
+    EXPECT_FALSE(status.ok());
+  }
+
+  FLAGS_table_exceptions = true;
+  {
+    EXPECT_THROW(
+        {
+          QueryData results;
+          queryInternal("SELECT * FROM exceptional", results, dbc);
+        },
+        std::runtime_error);
+  }
+  FLAGS_table_exceptions = backup_flag;
 }
 
 } // namespace osquery
